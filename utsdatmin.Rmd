@@ -1,0 +1,86 @@
+---
+title: "UTS Datmin"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r message=FALSE, warning=FALSE}
+library(psych)
+library(caret)
+```
+### Baca Data
+```{r}
+data1<- read.csv("D:/datauts/data.csv", header=FALSE)
+head(data1)
+
+```
+### Baca Data
+```{r}
+erel<- read.csv("D:/datauts/data.csv", header=FALSE)
+head(erel)
+str(erel)
+
+```
+### Konversi Data
+Mengubah variabel **V3** dan **V8** **V11****V15**menjadi bertipe factor
+```{r}
+erel$V3  <- as.factor(erel$V3)
+erel$V8 <- as.factor(erel$V8)
+erel$V11 <- as.factor(erel$V11)
+erel$V15 <- as.factor(erel$V15)
+str(erel)
+```
+
+### Pair Plot
+
+```{r}
+pairs.panels(erel)
+```
+
+Terlihat korelasi antara variabel tidak terlalu signifikan, kita misalkan tidak ada multikolinear. Pada kasus asli harap diuji dengan uji multikolinearitas
+
+
+### Split Data
+Memecah data menjadi data training(80% dari data awal) dan data test (20% dari data awal)
+```{r}
+set.seed(1234)
+sampel <- sample(2, nrow(erel), replace = T, prob = c(0.8,0.2))
+trainingdat <- erel[sampel==1, ]
+testingdat <- erel[sampel==2, ]
+print(paste("Jumlah Train Data: ", nrow(trainingdat), "| Jumlah Test Data: ", nrow(testingdat)))
+```
+
+### Buat Model
+
+```{r}
+modellogreg<-glm(V1~ V9+V10+V12+V16, data=trainingdat, family = binomial(link="logit"))
+summary(modellogreg)
+```
+
+#### Koefisien model
+```{r}
+coefficients(modellogreg)
+```
+Model regresi yang didapat
+Ln P/1-P = 3.3404785 +  18.2908575 V9 +0.6727393V10  -0.1894845V12  -0.4271787V16
+#### Melakukan Prediksi
+
+```{r}
+prediksilogreg <- predict(modellogreg, testingdat, type="response") #output berupa peluang
+prediksilogreg
+```
+
+Menyaring prediksi, lebih besar dari 0.05 dikategorikan 1 (admit) selain itu dikategorikan 0 (tidak diadmit)
+
+```{r}
+pred <- ifelse(prediksilogreg>0.5, 1, 0)
+pred
+```
+
+#### Confusion Matrix
+confusionMatrix (table(pred, testingdat$V1))
+
